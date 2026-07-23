@@ -1,5 +1,5 @@
-// `.ts` 확장자를 명시하는 이유: scripts/tag-tool.mjs가 이 파일을 Node에서
-// 직접 import해 태그에 구울 URL 목록을 뽑는다. Node ESM은 확장자를 요구한다.
+// `.ts` 확장자를 명시하는 이유: scripts/card-tool.mjs가 이 파일을 Node에서
+// 직접 import해 착 카드의 슬롯 배치를 계산한다. Node ESM은 확장자를 요구한다.
 import type { Spot, Stage } from './types.ts'
 import { hyeonchungsa } from './stages/hyeonchungsa.ts'
 import { shillastay } from './stages/shillastay.ts'
