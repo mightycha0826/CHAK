@@ -51,6 +51,45 @@ function lua(s) {
   return `'${String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 }
 
+/**
+ * 생성한 Lua가 대괄호 구분자 때문에 깨지지 않는지 검사한다.
+ *
+ * Lua의 긴 주석 `--[[ ... --]]` 와 긴 문자열 `[[ ... ]]` 는 **처음 만나는**
+ * 닫는 구분자에서 끝난다. 그래서 본문 안에 `]]` 가 하나라도 들어가면 거기서
+ * 잘리고, 뒤따르는 글자가 코드로 해석돼 엉뚱한 위치에서 문법 에러가 난다.
+ *
+ * 실제로 이 생성기가 두 번 그 실수를 냈다 — usage 문구의 `[-n]]]` 와,
+ * 그 버그를 설명하려고 주석에 적은 `]]` 자체. 사람 눈으로는 잘 안 보이고
+ * 증상이 원인에서 멀리 떨어져 나타나므로 기계가 막는 편이 낫다.
+ */
+function assertLuaBrackets(name, src) {
+  const open = src.indexOf('--[[')
+  if (open !== -1) {
+    const body = src.slice(open + 4)
+    const end = body.indexOf(']]')
+    const intended = body.indexOf('--]]')
+    if (end === -1) throw new Error(`${name}: 블록 주석이 닫히지 않았습니다.`)
+    if (end !== intended + 2) {
+      const line = src.slice(0, open + 4 + end).split('\n').length
+      throw new Error(
+        `${name}:${line} 블록 주석 안에 닫는 대괄호 두 개가 있어 주석이 일찍 끝납니다.\n` +
+          `  → ${src.split('\n')[line - 1].trim()}`,
+      )
+    }
+  }
+
+  // `[[ ... ]]` 로 연 긴 문자열은 본문에 대괄호가 없어야 안전하다.
+  for (const m of src.matchAll(/(?<!\[=*)\[\[([\s\S]*?)\]\]/g)) {
+    if (/[[\]]/.test(m[1])) {
+      const line = src.slice(0, m.index).split('\n').length
+      throw new Error(
+        `${name}:${line} 긴 문자열 안에 대괄호가 있습니다. [==[ ]==] 로 바꾸세요.\n` +
+          `  → ${m[0].split('\n')[0].trim()}`,
+      )
+    }
+  }
+}
+
 // ── chak_init.lua ────────────────────────────────────────────────
 function initScript({ stage, blocks, blockNums, key, spots }) {
   const writes = blocks
@@ -66,6 +105,15 @@ function initScript({ stage, blocks, blockNums, key, spots }) {
   주의: 이미 한 번 발급한 카드를 다시 발급하려면 ndefformat이 공장 기본키를
   요구하므로 cwipe로 되돌려야 한다. Gen1a 매직카드라 백도어로 가능하다.
 
+  ⚠️ 화면에 찍는 글자는 전부 ASCII다. PM3 윈도우 콘솔이 한글 UTF-8을 깨뜨려서
+     (script list 출력의 경로가 깨지는 것과 같은 이유) 현장에서 읽을 수 없다.
+     한글은 이렇게 주석에만 둔다.
+
+  ⚠️ 긴 문자열을 등호 두 개짜리 구분자로 여는 이유: 대괄호를 겹쳐 여는 기본
+     구분자는 안에 닫는 대괄호가 둘 붙어 나오면 거기서 끝나버린다. usage 문구에
+     -h 같은 옵션을 대괄호로 감싸 쓰므로 반드시 등호를 끼워야 한다.
+     같은 이유로 이 주석에도 닫는 대괄호를 붙여 쓰지 않는다.
+
   사용법:
     script run chak_init          (cwipe → ndefformat → 골격)
     script run chak_init -n       (cwipe 생략 — 새 카드일 때)
@@ -76,12 +124,12 @@ local ansicolors = require('ansicolors')
 
 author = 'CHAK'
 version = 'v1.0.0'
-desc = [[착 카드 발급 — ${stage.name} (지점 ${spots.length}개)]]
-usage = [[script run chak_init [-h] [-n]]]
-arguments = [[
-    -h    이 도움말
-    -n    cwipe 생략 (공장 출하 상태의 새 카드일 때)
-]]
+desc = [==[Issue a CHAK card - ${stage.id} (${spots.length} slots)]==]
+usage = [==[script run chak_init [-h] [-n]]==]
+arguments = [==[
+    -h    this help
+    -n    skip cwipe (factory-fresh card)
+]==]
 
 local KEY = ${lua(key)}
 
@@ -100,22 +148,22 @@ local function main(args)
         if o == 'n' then skipWipe = true end
     end
 
-    print(ansicolors.cyan .. '[착] 카드 발급 — ${stage.name}' .. ansicolors.reset)
+    print(ansicolors.cyan .. '[CHAK] issue card - stage ${stage.id}, ${spots.length} slots' .. ansicolors.reset)
 
     if not skipWipe then
-        print('[착] Gen1a 백도어로 초기화')
+        print('[CHAK] wipe (gen1a backdoor)')
         core.console('hf mf cwipe')
     end
 
-    print('[착] NDEF 포맷')
+    print('[CHAK] ndef format')
     core.console('hf mf ndefformat')
 
-    print('[착] 빈 슬롯 골격 쓰기')
+    print('[CHAK] write empty slots')
     for _, b in ipairs(BLOCKS) do
         core.console(('hf mf wrbl --blk %d -a -k %s -d %s'):format(b.blk, KEY, b.data))
     end
 
-    print(ansicolors.green .. '[착] 발급 완료. 확인: hf mf ndefread' .. ansicolors.reset)
+    print(ansicolors.green .. '[CHAK] done. verify with:  hf mf ndefread' .. ansicolors.reset)
 end
 
 main(args)
@@ -127,7 +175,7 @@ function stampScript({ stage, key, spots }) {
   const table = spots
     .map(
       (s) =>
-        `    { id = ${lua(s.id)}, code = ${lua(s.code)}, blk = ${s.block}, title = ${lua(s.title)} },`,
+        `    { id = ${lua(s.id)}, code = ${lua(s.code)}, blk = ${s.block} },  -- ${s.title}`,
     )
     .join('\n')
 
@@ -146,6 +194,14 @@ function stampScript({ stage, key, spots }) {
   시각은 이 PC의 로컬 시각을 쓴다. 리더 PC 시계가 틀어져 있으면 그대로
   카드에 박히므로 설치 전에 한 번 맞출 것.
 
+  ⚠️ 화면에 찍는 글자는 전부 ASCII다. PM3 윈도우 콘솔이 한글 UTF-8을 깨뜨려서
+     현장에서 읽을 수 없다. 지점 한글 이름은 아래 표의 주석에만 둔다.
+
+  ⚠️ 긴 문자열을 등호 두 개짜리 구분자로 여는 이유: 대괄호를 겹쳐 여는 기본
+     구분자는 안에 닫는 대괄호가 둘 붙어 나오면 거기서 끝나버린다. usage 문구에
+     -h 같은 옵션을 대괄호로 감싸 쓰므로 반드시 등호를 끼워야 한다.
+     같은 이유로 이 주석에도 닫는 대괄호를 붙여 쓰지 않는다.
+
   사용법:
     script run chak_stamp -s nanjung      키오스크 모드 (엔터로 종료)
     script run chak_stamp -s nanjung -1   한 장만 찍고 종료
@@ -158,14 +214,14 @@ local lib14a = require('read14a')
 
 author = 'CHAK'
 version = 'v1.0.0'
-desc = [[착 현장 리더 — ${stage.name}]]
-usage = [[script run chak_stamp [-h] [-l] [-1] -s <지점id>]]
-arguments = [[
-    -h            이 도움말
-    -l            지점 목록 출력
-    -s <지점id>   이 리더가 담당할 지점
-    -1            한 장만 찍고 종료 (기본은 계속 대기)
-]]
+desc = [==[CHAK spot reader - stage ${stage.id}]==]
+usage = [==[script run chak_stamp [-h] [-l] [-1] -s <spotid>]==]
+arguments = [==[
+    -h            this help
+    -l            list spots
+    -s <spotid>   which spot this reader is
+    -1            stamp one card then quit (default: keep waiting)
+]==]
 
 local KEY = ${lua(key)}
 
@@ -178,9 +234,9 @@ local function help()
 end
 
 local function listSpots()
-    print(ansicolors.cyan .. '[착] ${stage.name} 지점' .. ansicolors.reset)
-    for _, s in ipairs(SPOTS) do
-        print(('  %-10s %s  (슬롯 블록 %d)'):format(s.id, s.title, s.blk))
+    print(ansicolors.cyan .. '[CHAK] spots - stage ${stage.id}' .. ansicolors.reset)
+    for i, s in ipairs(SPOTS) do
+        print(('  %d  %-10s %s  blk %d'):format(i - 1, s.id, s.code, s.blk))
     end
 end
 
@@ -213,19 +269,21 @@ local function main(args)
     end
 
     if not spotId then
-        print(ansicolors.red .. '[착] -s 로 지점을 지정하세요.' .. ansicolors.reset)
+        print(ansicolors.red .. '[CHAK] need -s <spotid>' .. ansicolors.reset)
         return listSpots()
     end
 
     local spot = findSpot(spotId)
     if not spot then
-        print(ansicolors.red .. ('[착] 모르는 지점: %s'):format(spotId) .. ansicolors.reset)
+        print(ansicolors.red .. ('[CHAK] unknown spot: %s'):format(spotId) .. ansicolors.reset)
         return listSpots()
     end
 
-    print(ansicolors.cyan .. ('[착] %s · %s'):format('${stage.name}', spot.title) .. ansicolors.reset)
-    print(('[착] 슬롯 블록 %d · 착을 대주세요%s'):format(
-        spot.blk, once and '' or ' (엔터로 종료)'))
+    print(ansicolors.cyan ..
+        ('[CHAK] reader ready - %s / %s  (code %s, blk %d)')
+            :format('${stage.id}', spot.id, spot.code, spot.blk) ..
+        ansicolors.reset)
+    print(('[CHAK] present card...%s'):format(once and '' or '  (ENTER to quit)'))
 
     local stamped = 0
     repeat
@@ -234,7 +292,7 @@ local function main(args)
             local slot = stamp(spot)
             stamped = stamped + 1
             print(ansicolors.green ..
-                ('[착] %s  UID %s  → %s'):format(spot.title, card.uid, slot) ..
+                ('[CHAK] stamped  UID %s  -> %s'):format(card.uid, slot) ..
                 ansicolors.reset)
 
             -- 카드를 떼기 전까지 기다린다. 안 그러면 한 번 댄 걸로 계속 찍힌다.
@@ -245,7 +303,7 @@ local function main(args)
         core.clearCommandBuffer()
     until once or core.kbd_enter_pressed()
 
-    print(ansicolors.cyan .. ('[착] 종료 — %d장 처리'):format(stamped) .. ansicolors.reset)
+    print(ansicolors.cyan .. ('[CHAK] bye - %d card(s)'):format(stamped) .. ansicolors.reset)
 end
 
 main(args)
@@ -290,8 +348,15 @@ async function main() {
   const outDir = path.join(ROOT, args.out)
   await mkdir(outDir, { recursive: true })
 
-  await writeFile(path.join(outDir, 'chak_init.lua'), initScript(ctx), 'utf8')
-  await writeFile(path.join(outDir, 'chak_stamp.lua'), stampScript(ctx), 'utf8')
+  const initSrc = initScript(ctx)
+  const stampSrc = stampScript(ctx)
+
+  // 쓰기 전에 검사한다. 깨진 Lua를 PM3에 배포하면 원인이 한참 뒤에 드러난다.
+  assertLuaBrackets('chak_init.lua', initSrc)
+  assertLuaBrackets('chak_stamp.lua', stampSrc)
+
+  await writeFile(path.join(outDir, 'chak_init.lua'), initSrc, 'utf8')
+  await writeFile(path.join(outDir, 'chak_stamp.lua'), stampSrc, 'utf8')
 
   const readme = [
     `# 착(CHAK) PM3 도구 — ${stage.name}`,

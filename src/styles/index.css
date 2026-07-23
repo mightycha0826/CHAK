@@ -1,50 +1,63 @@
 @import 'tailwindcss';
 
 /* ═══════════════════════════════════════════════════════════════
-   착(CHAK) 디자인 시스템
+   착(CHAK) 디자인 시스템 — 「박물관 도록」
+
+   앞선 버전은 무채색 편집 디자인이었다. 정보 밀도와 위계는 좋았지만
+   현충사라는 무대가 화면 어디에도 없었다. 이번에는 국립박물관 도록의
+   어법을 골격 위에 얹는다 — 사진이 먼저 오고, 글자는 유물 옆 플래카드처럼
+   물러선다.
 
    원칙
-   1. 무채색만. 색은 인주(朱) 하나뿐이고, 수집·진행 상태에만 쓴다.
-   2. 순검정 블록으로 위계를 만든다. 회색조 그라데이션이 아니라 대비로.
-   3. 서체는 Pretendard 하나. 세리프는 도장 글자에만 — 낙관은 명조여야 하니까.
-   4. 장식보다 정보. 여백은 넓히되 빈 곳을 무늬로 채우지 않는다.
-   5. 그림자 대신 배경 대비로 면을 나눈다.
+   1. **사진이 주인공.** 화면마다 전면 사진 하나를 두고 글자는 그 위나
+      아래로 물러선다. 검정 면은 사진이 없을 때의 대역일 뿐이다.
+   2. **유물명은 명조, 나머지는 고딕.** 박물관 플래카드의 실제 관습이다.
+      장식이 아니라 규칙이므로 예외 없이 지킨다.
+   3. **색은 단청에서 빌린다.** 사진 속 현충사 본전의 단청 — 적(赤)과
+      청록(碧) 두 가지. 인주는 그중 적을 쓴다. 그 밖에는 전부 무채색.
+   4. **여백은 종이의 여백.** 도록은 유물 주위를 비워 둔다. 다만 비운
+      자리를 무늬로 채우지는 않는다.
+   5. **괘선은 머리카락 굵기로.** 면을 나누는 건 그림자가 아니라 실선이다.
    ═══════════════════════════════════════════════════════════════ */
 
 @theme {
-  --color-bg: #f4f5f6; /* 앱 배경 */
-  --color-surface: #ffffff; /* 카드 */
-  --color-surface-2: #fafbfb;
+  /* 지면 — 차가운 회색 대신 아주 옅은 미색. 채도를 3% 아래로 눌러
+     「베이지」로 읽히지 않게 한다. */
+  --color-bg: #f2f1ee;
+  --color-surface: #fbfaf8;
+  --color-surface-2: #f6f5f2;
 
-  --color-ink: #0e0f11; /* 제목 */
-  --color-ink-2: #4b5057; /* 본문 */
-  --color-ink-3: #9ba1a8; /* 보조·미수집 */
+  /* 먹 */
+  --color-ink: #16150f;
+  --color-ink-2: #4a473e;
+  --color-ink-3: #918d80;
 
-  --color-line: #e7e9ec;
-  --color-line-2: #d6dade;
+  /* 괘선 */
+  --color-line: #e2dfd7;
+  --color-line-2: #cfcabd;
 
-  --color-black: #000000; /* CTA·히어로 블록 */
-  --color-seal: #e4321b; /* 인주 — 유일한 액센트 */
+  --color-black: #0d0c09;
+
+  /* 단청에서 뽑은 두 색 — 본전 사진의 실제 안료값에 가깝다 */
+  --color-seal: #b7332a; /* 주칠(朱) — 도장·수집 상태 전용 */
+  --color-dan: #1f5f57; /* 뇌록(碧) — 보조. 정보성 강조에만 */
 
   --font-sans:
     'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, sans-serif;
-  /* 도장·문양 전용. UI에는 쓰지 않는다. */
-  --font-seal: 'Noto Serif KR', serif;
+  /* 유물명·도장 글자 전용. UI에는 절대 쓰지 않는다. */
+  --font-serif: 'Noto Serif KR', serif;
 
-  --radius-card: 12px;
-  --radius-btn: 10px;
+  --radius-card: 2px;
+  --radius-btn: 2px;
 
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-stamp: cubic-bezier(0.34, 1.32, 0.5, 1);
 }
 
-/* ── 기본 ───────────────────────────────────────────────────────
-   반드시 @layer base 안에 둘 것. 레이어 밖에 두면 unlayered 규칙이 되어
-   @layer components의 .btn 같은 규칙을 특이도와 무관하게 이겨버린다.
-   ─────────────────────────────────────────────────────────────── */
-
 @layer base {
+  /* 반드시 @layer base 안에 둘 것. 레이어 밖 규칙은 @layer components의
+     .btn 같은 규칙을 특이도와 무관하게 이겨버린다. */
   * {
     -webkit-tap-highlight-color: transparent;
   }
@@ -61,7 +74,7 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-weight: 500;
-    letter-spacing: -0.021em;
+    letter-spacing: -0.019em;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
   }
@@ -70,9 +83,9 @@
   h2,
   h3 {
     margin: 0;
-    font-weight: 800;
-    letter-spacing: -0.035em;
-    line-height: 1.28;
+    font-weight: 700;
+    letter-spacing: -0.032em;
+    line-height: 1.3;
   }
 
   button {
@@ -89,7 +102,6 @@
 }
 
 @layer components {
-  /* 화면 프레임 — 데스크톱에서는 모바일 폭으로 가둔다 */
   .frame {
     width: 100%;
     max-width: 460px;
@@ -98,6 +110,16 @@
     position: relative;
     overflow: hidden;
     background: var(--color-bg);
+  }
+
+  /* ── 유물명 ───────────────────────────────────────────────────
+     박물관 플래카드의 제목. 명조에 자간을 살짝 벌려 한자·한글이
+     섞여도 밀리지 않게 한다. */
+  .relic {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    line-height: 1.34;
   }
 
   /* ── 버튼 ─────────────────────────────────────────────────── */
@@ -112,9 +134,9 @@
     border-radius: var(--radius-btn);
     background: var(--color-black);
     color: #fff;
-    font-size: 16px;
+    font-size: 15.5px;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.018em;
     transition:
       transform 0.1s var(--ease-out),
       opacity 0.16s ease;
@@ -132,7 +154,7 @@
   .btn-line {
     background: transparent;
     color: var(--color-ink);
-    border: 1.5px solid var(--color-ink);
+    border: 1px solid var(--color-ink);
   }
   .btn-quiet {
     background: var(--color-surface);
@@ -141,38 +163,37 @@
   }
 
   /* ── 라벨 ─────────────────────────────────────────────────── */
-  /* 분류 라벨. 장식용 letter-spacing 없이 굵고 작게. */
   .label {
     display: inline-flex;
     align-items: center;
-    height: 24px;
+    height: 23px;
     padding: 0 8px;
-    border-radius: 4px;
-    background: var(--color-bg);
+    border: 1px solid var(--color-line-2);
     color: var(--color-ink-2);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0;
   }
   .label-dark {
-    background: rgb(255 255 255 / 0.16);
-    color: #fff;
+    border-color: rgb(255 255 255 / 0.34);
+    color: rgb(255 255 255 / 0.92);
   }
   .label-seal {
-    background: color-mix(in srgb, var(--color-seal) 10%, transparent);
+    border-color: color-mix(in srgb, var(--color-seal) 45%, transparent);
     color: var(--color-seal);
   }
 
-  /* 스펙 행 — label / value 두 칸. 카드도 칩도 쓰지 않는다. */
+  /* ── 제원표 ───────────────────────────────────────────────────
+     도록 뒤편의 유물 목록 형식. 카드도 칩도 쓰지 않는다. */
   .spec {
     display: flex;
-    align-items: baseline;
-    gap: 16px;
-    padding: 11px 0;
-    font-size: 15px;
+    gap: 14px;
+    padding: 10px 0;
+    border-top: 1px solid var(--color-line);
+    font-size: 14.5px;
   }
   .spec dt {
-    width: 84px;
+    width: 62px;
     flex: none;
     color: var(--color-ink-3);
     font-weight: 500;
@@ -182,21 +203,22 @@
     flex: 1;
     color: var(--color-ink);
     font-weight: 600;
+    line-height: 1.5;
   }
 
-  /* 카카오 지도 커스텀 오버레이 핀 (SDK가 DOM으로 직접 삽입한다) */
+  /* 카카오 지도가 DOM으로 직접 삽입하는 핀 */
   .kakao-pin {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 999px;
-    border: 1.5px solid var(--color-line-2);
+    border: 1px solid var(--color-line-2);
     background: #fff;
     color: var(--color-ink-3);
-    font-size: 13px;
-    font-weight: 800;
+    font-size: 12.5px;
+    font-weight: 700;
   }
   .kakao-pin.is-got {
     border-color: var(--color-seal);
@@ -205,7 +227,12 @@
   }
 }
 
-/* 도장 착지 순간의 화면 흔들림 */
+@utility rule {
+  /* 도록의 괘선 — 머리카락 굵기 */
+  border-top: 1px solid var(--color-line);
+}
+
+/* 도장이 내려앉는 순간의 흔들림 */
 @keyframes chak-shake {
   0% { transform: translate(0, 0); }
   18% { transform: translate(-3px, 2px); }
@@ -217,6 +244,12 @@
 
 .shake {
   animation: chak-shake 0.4s var(--ease-out);
+}
+
+/* 사진이 떠오르는 기본 동작 */
+@keyframes chak-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

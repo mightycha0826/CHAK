@@ -20,7 +20,8 @@ export const shillastay: Stage = {
   intro: '박물관이 아니어도 됩니다. 지금 서 계신 이 건물에서 직접 확인해 보세요.',
   certificateTitle: '착(CHAK) 제안 완독',
   credit: '착(CHAK) 팀 · 현장 시연용 무대',
-  cover: { src: '/covers/ss.jpg', position: 'center 45%' },
+  // 표지 사진 없음 — 발표장 무대라 현장 답사 후 채운다. 없으면 검정 표지로
+  // 떨어지고, 그 편이 「지금 이 건물」이라는 메시지에 오히려 맞다.
   map: {
     terrain: 'indoor',
     points: {

@@ -90,7 +90,7 @@ export default function ScanSheet({ stage, onRead, onSimulate, onClose }: Props)
 
       <div className="flex flex-1 flex-col items-center px-7 pb-10 text-center">
         <span className="text-[13px] font-semibold text-white/45">{stage.name}</span>
-        <h2 className="mt-3 text-[27px] leading-[1.28] text-white">
+        <h2 className="relic mt-3 text-[27px] leading-[1.28] text-white">
           착을 대주세요
         </h2>
         <p className="mt-3 text-[14px] font-medium leading-relaxed text-white/55">

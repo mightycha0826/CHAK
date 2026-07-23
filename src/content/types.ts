@@ -18,6 +18,13 @@ export interface Spot {
   subtitle: string
   /** 전시 플래카드 메타 라인 (지정 등급 · 시대 · 구역) */
   meta: string
+  /**
+   * 제원표 — 도록 뒤편의 유물 목록 형식으로 그린다.
+   *
+   * ⚠️ 여기 적히는 건 **사실**이다. 확인되지 않은 수치·연도는 아예 넣지
+   * 말 것. 대회 제출 전 현충사관리소 공식 자료로 한 번 더 대조할 것.
+   */
+  facts?: { label: string; value: string }[]
   /** 2~3문장 이야기 */
   story: string
   /** 관내 구역 */
@@ -28,6 +35,13 @@ export interface Spot {
   excerpt: string
   /** 출처 표기 */
   source?: string
+  /**
+   * 사진 키 (`src/content/photos.ts`). 없으면 검정 면으로 떨어진다.
+   * 저작자·라이선스는 photos.ts에 함께 기록되어 화면에 노출된다.
+   */
+  photo?: string
+  /** 사진이 잘리는 기준점 — 피사체가 남도록 (CSS object-position) */
+  photoPosition?: string
 }
 
 export interface LatLng {
@@ -55,21 +69,19 @@ export interface StageMap {
 }
 
 /**
- * 온보딩 표지 사진.
+ * 무대 표지 사진.
  *
  * 없으면 검정 화면으로 그대로 떨어진다. 파일이 없거나 로드에 실패해도
  * 마찬가지 — 발표장에서 이미지 하나 때문에 첫 화면이 깨지면 안 된다.
  */
 export interface StageCover {
-  /** `public/` 기준 경로. 예: `/covers/hcs.jpg` */
-  src: string
+  /** 사진 키 (`src/content/photos.ts`) */
+  photo: string
   /**
    * 세로 화면에 가로 사진을 담으면 좌우가 잘린다. 피사체(동상·건물)가
    * 남도록 잘리는 기준점을 지정한다. CSS object-position 값.
    */
   position?: string
-  /** 출처 표기 — 표지 하단에 작게 남긴다 */
-  credit?: string
 }
 
 export interface Stage {

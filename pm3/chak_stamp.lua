@@ -13,6 +13,14 @@
   시각은 이 PC의 로컬 시각을 쓴다. 리더 PC 시계가 틀어져 있으면 그대로
   카드에 박히므로 설치 전에 한 번 맞출 것.
 
+  ⚠️ 화면에 찍는 글자는 전부 ASCII다. PM3 윈도우 콘솔이 한글 UTF-8을 깨뜨려서
+     현장에서 읽을 수 없다. 지점 한글 이름은 아래 표의 주석에만 둔다.
+
+  ⚠️ 긴 문자열을 등호 두 개짜리 구분자로 여는 이유: 대괄호를 겹쳐 여는 기본
+     구분자는 안에 닫는 대괄호가 둘 붙어 나오면 거기서 끝나버린다. usage 문구에
+     -h 같은 옵션을 대괄호로 감싸 쓰므로 반드시 등호를 끼워야 한다.
+     같은 이유로 이 주석에도 닫는 대괄호를 붙여 쓰지 않는다.
+
   사용법:
     script run chak_stamp -s nanjung      키오스크 모드 (엔터로 종료)
     script run chak_stamp -s nanjung -1   한 장만 찍고 종료
@@ -25,23 +33,23 @@ local lib14a = require('read14a')
 
 author = 'CHAK'
 version = 'v1.0.0'
-desc = [[착 현장 리더 — 현충사]]
-usage = [[script run chak_stamp [-h] [-l] [-1] -s <지점id>]]
-arguments = [[
-    -h            이 도움말
-    -l            지점 목록 출력
-    -s <지점id>   이 리더가 담당할 지점
-    -1            한 장만 찍고 종료 (기본은 계속 대기)
-]]
+desc = [==[CHAK spot reader - stage hcs]==]
+usage = [==[script run chak_stamp [-h] [-l] [-1] -s <spotid>]==]
+arguments = [==[
+    -h            this help
+    -l            list spots
+    -s <spotid>   which spot this reader is
+    -1            stamp one card then quit (default: keep waiting)
+]==]
 
 local KEY = 'D3F7D3F7D3F7'
 
 local SPOTS = {
-    { id = 'gwan', code = 'GWAN', blk = 5, title = '충무공이순신기념관' },
-    { id = 'nanjung', code = 'NANJ', blk = 6, title = '난중일기' },
-    { id = 'janggeom', code = 'JANG', blk = 8, title = '이순신 장검' },
-    { id = 'gotaek', code = 'GOTA', blk = 9, title = '이충무공 고택과 활터' },
-    { id = 'bonjeon', code = 'BONJ', blk = 10, title = '본전' },
+    { id = 'gwan', code = 'GWAN', blk = 5 },  -- 충무공이순신기념관
+    { id = 'nanjung', code = 'NANJ', blk = 6 },  -- 난중일기
+    { id = 'janggeom', code = 'JANG', blk = 8 },  -- 이순신 장검
+    { id = 'gotaek', code = 'GOTA', blk = 9 },  -- 이충무공 고택과 활터
+    { id = 'bonjeon', code = 'BONJ', blk = 10 },  -- 본전
 }
 
 local function help()
@@ -49,9 +57,9 @@ local function help()
 end
 
 local function listSpots()
-    print(ansicolors.cyan .. '[착] 현충사 지점' .. ansicolors.reset)
-    for _, s in ipairs(SPOTS) do
-        print(('  %-10s %s  (슬롯 블록 %d)'):format(s.id, s.title, s.blk))
+    print(ansicolors.cyan .. '[CHAK] spots - stage hcs' .. ansicolors.reset)
+    for i, s in ipairs(SPOTS) do
+        print(('  %d  %-10s %s  blk %d'):format(i - 1, s.id, s.code, s.blk))
     end
 end
 
@@ -84,19 +92,21 @@ local function main(args)
     end
 
     if not spotId then
-        print(ansicolors.red .. '[착] -s 로 지점을 지정하세요.' .. ansicolors.reset)
+        print(ansicolors.red .. '[CHAK] need -s <spotid>' .. ansicolors.reset)
         return listSpots()
     end
 
     local spot = findSpot(spotId)
     if not spot then
-        print(ansicolors.red .. ('[착] 모르는 지점: %s'):format(spotId) .. ansicolors.reset)
+        print(ansicolors.red .. ('[CHAK] unknown spot: %s'):format(spotId) .. ansicolors.reset)
         return listSpots()
     end
 
-    print(ansicolors.cyan .. ('[착] %s · %s'):format('현충사', spot.title) .. ansicolors.reset)
-    print(('[착] 슬롯 블록 %d · 착을 대주세요%s'):format(
-        spot.blk, once and '' or ' (엔터로 종료)'))
+    print(ansicolors.cyan ..
+        ('[CHAK] reader ready - %s / %s  (code %s, blk %d)')
+            :format('hcs', spot.id, spot.code, spot.blk) ..
+        ansicolors.reset)
+    print(('[CHAK] present card...%s'):format(once and '' or '  (ENTER to quit)'))
 
     local stamped = 0
     repeat
@@ -105,7 +115,7 @@ local function main(args)
             local slot = stamp(spot)
             stamped = stamped + 1
             print(ansicolors.green ..
-                ('[착] %s  UID %s  → %s'):format(spot.title, card.uid, slot) ..
+                ('[CHAK] stamped  UID %s  -> %s'):format(card.uid, slot) ..
                 ansicolors.reset)
 
             -- 카드를 떼기 전까지 기다린다. 안 그러면 한 번 댄 걸로 계속 찍힌다.
@@ -116,7 +126,7 @@ local function main(args)
         core.clearCommandBuffer()
     until once or core.kbd_enter_pressed()
 
-    print(ansicolors.cyan .. ('[착] 종료 — %d장 처리'):format(stamped) .. ansicolors.reset)
+    print(ansicolors.cyan .. ('[CHAK] bye - %d card(s)'):format(stamped) .. ansicolors.reset)
 end
 
 main(args)

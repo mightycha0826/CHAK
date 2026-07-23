@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Spot, Stage } from '../content/index.ts'
 import Icon from '../components/Icon.tsx'
+import Photo from '../components/Photo.tsx'
 import Seal from '../components/Seal.tsx'
 import { haptic } from '../lib/format.ts'
 
@@ -71,8 +72,8 @@ export default function StampReveal({ stage, spots, before, completing, onConfir
                 <span
                   key={s.id}
                   className={[
-                    'h-1 rounded-full transition-all duration-300',
-                    i === index ? 'w-5 bg-ink-1' : i < index ? 'w-2 bg-ink-3' : 'w-2 bg-line-2',
+                    'h-1 transition-all duration-300',
+                    i === index ? 'w-5 bg-ink' : i < index ? 'w-2 bg-ink-3' : 'w-2 bg-line-2',
                   ].join(' ')}
                 />
               ))}
@@ -80,19 +81,41 @@ export default function StampReveal({ stage, spots, before, completing, onConfir
           )}
 
           <div className="flex flex-1 flex-col items-center justify-center text-center">
+            {/* 도판 위에 낙관이 내려앉는다 — 유물을 실제로 보고 도장을 받는 느낌 */}
             <AnimatePresence mode="wait">
-              <div key={spot.id} className={landed ? 'shake' : undefined}>
-                <motion.div
-                  initial={{ scale: 2.8, opacity: 0, rotate: -22 }}
-                  animate={{ scale: 1, opacity: 1, rotate: -6 }}
-                  transition={{
-                    delay: LAND_MS / 1000 - 0.3,
-                    duration: 0.3,
-                    ease: [0.34, 1.32, 0.5, 1],
-                  }}
+              <div key={spot.id} className="relative">
+                {spot.photo && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 1.06 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, ease: [0.22, 0.61, 0.36, 1] }}
+                    className="h-[168px] w-[168px] overflow-hidden border border-line"
+                  >
+                    <Photo
+                      name={spot.photo}
+                      position={spot.photoPosition}
+                      className="h-full w-full object-cover"
+                    />
+                  </motion.div>
+                )}
+                <div
+                  className={[
+                    landed ? 'shake' : '',
+                    spot.photo ? 'absolute inset-0 flex items-center justify-center' : '',
+                  ].join(' ')}
                 >
-                  <Seal motif={spot.motif} size={138} bleed tilt={0} />
-                </motion.div>
+                  <motion.div
+                    initial={{ scale: 2.8, opacity: 0, rotate: -22 }}
+                    animate={{ scale: 1, opacity: 1, rotate: -6 }}
+                    transition={{
+                      delay: LAND_MS / 1000 - 0.3,
+                      duration: 0.3,
+                      ease: [0.34, 1.32, 0.5, 1],
+                    }}
+                  >
+                    <Seal motif={spot.motif} size={spot.photo ? 118 : 138} bleed tilt={0} />
+                  </motion.div>
+                </div>
               </div>
             </AnimatePresence>
 
@@ -101,13 +124,13 @@ export default function StampReveal({ stage, spots, before, completing, onConfir
               initial={{ opacity: 0, y: 12 }}
               animate={landed ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.32, ease: [0.22, 0.61, 0.36, 1] }}
-              className="mt-11 w-full"
+              className="mt-10 w-full"
             >
               <span className="label label-seal">도장 {count}번째</span>
-              <h2 className="mt-3.5 text-[28px] leading-[1.25]">
+              <h2 className="relic mt-3.5 text-[27px] leading-[1.28]">
                 {spot.title.split(' — ')[0]}
               </h2>
-              <p className="mt-3 text-[15px] font-medium leading-relaxed text-ink-2">
+              <p className="relic mt-3 text-[15px] leading-relaxed text-ink-2">
                 {spot.excerpt}
               </p>
 

@@ -1,5 +1,6 @@
 import type { Stage } from '../content/index.ts'
 import Icon from '../components/Icon.tsx'
+import Photo from '../components/Photo.tsx'
 
 interface Props {
   stages: Stage[]
@@ -9,21 +10,26 @@ interface Props {
   onSwitch: (id: string) => void
 }
 
-/** 무대 탭 — 어느 장소를 답사할지 고른다. */
+/**
+ * 무대 탭 — 도록의 총서 목록.
+ *
+ * 무대마다 표지 사진을 크게 깔고, 선택된 무대는 사진을 온전히, 나머지는
+ * 어둡게 눌러 「지금 보고 있는 권」을 분명히 한다.
+ */
 export default function Stages({ stages, current, countOf, onSwitch }: Props) {
   return (
     <div className="flex h-full flex-col bg-bg">
       <header className="flex h-14 shrink-0 items-center px-5">
-        <h1 className="text-[20px]">무대</h1>
+        <h1 className="text-[19px] font-bold">무대</h1>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
-        <p className="px-1 text-[14px] font-medium leading-relaxed text-ink-2">
+        <p className="border-b border-line pb-4 text-[13.5px] font-medium leading-relaxed text-ink-2">
           착은 장소마다 다른 답사를 담습니다. 무대를 바꿔도 각각의 진행은 따로
           남습니다.
         </p>
 
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-4 space-y-3">
           {stages.map((stage) => {
             const count = countOf(stage.id)
             const total = stage.spots.length
@@ -33,69 +39,75 @@ export default function Stages({ stages, current, countOf, onSwitch }: Props) {
               <li key={stage.id}>
                 <button
                   onClick={() => onSwitch(stage.id)}
-                  className={[
-                    'w-full rounded-card px-5 py-5 text-left',
-                    on ? 'bg-black text-white' : 'bg-surface',
-                  ].join(' ')}
+                  className="relative block h-[168px] w-full overflow-hidden border border-line text-left"
+                  aria-current={on ? 'true' : undefined}
                 >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={[
-                        'text-[13px] font-semibold',
-                        on ? 'text-white/55' : 'text-ink-3',
-                      ].join(' ')}
-                    >
-                      {stage.region}
-                    </span>
-                    {on && <span className="label label-dark">선택됨</span>}
-                    <span className="flex-1" />
-                    {!on && (
-                      <span className="text-ink-3">
-                        <Icon name="chevron" size={17} />
-                      </span>
+                  {/* 표지 사진 (없으면 검정) */}
+                  <span className="absolute inset-0 bg-black">
+                    {stage.cover && (
+                      <Photo
+                        name={stage.cover.photo}
+                        position={stage.cover.position}
+                        className={[
+                          'h-full w-full object-cover transition-all duration-500',
+                          on ? '' : 'grayscale-[0.4]',
+                        ].join(' ')}
+                      />
                     )}
-                  </div>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0"
+                    style={{
+                      background: on
+                        ? 'linear-gradient(180deg, rgba(13,12,9,0.15) 0%, rgba(13,12,9,0.4) 55%, rgba(13,12,9,0.88) 100%)'
+                        : 'linear-gradient(180deg, rgba(13,12,9,0.45) 0%, rgba(13,12,9,0.6) 55%, rgba(13,12,9,0.92) 100%)',
+                    }}
+                  />
 
-                  <p className={['mt-2 text-[21px] font-extrabold tracking-[-0.035em]', on ? 'text-white' : 'text-ink'].join(' ')}>
-                    {stage.name}
-                  </p>
-                  <p
-                    className={[
-                      'mt-1 text-[13.5px] font-medium',
-                      on ? 'text-white/55' : 'text-ink-3',
-                    ].join(' ')}
-                  >
-                    {stage.subtitle}
-                  </p>
-
-                  <div className="mt-4 flex items-center gap-3">
-                    <div className="flex flex-1 gap-1">
-                      {stage.spots.map((s, i) => (
-                        <span
-                          key={s.id}
-                          className={[
-                            'h-1 flex-1 rounded-full',
-                            i < count ? 'bg-seal' : on ? 'bg-white/18' : 'bg-line-2',
-                          ].join(' ')}
-                        />
-                      ))}
-                    </div>
-                    <span
-                      className={[
-                        'text-[13px] font-bold tabular-nums',
-                        on ? 'text-white/70' : 'text-ink-3',
-                      ].join(' ')}
-                    >
-                      {count}/{total}
+                  <span className="absolute inset-0 flex flex-col justify-end p-5 text-white">
+                    <span className="flex items-center gap-2">
+                      <span className="text-[12.5px] font-semibold text-white/65">
+                        {stage.region}
+                      </span>
+                      {on && <span className="label label-dark">선택됨</span>}
                     </span>
-                  </div>
+
+                    <span className="relic mt-1.5 text-[25px] leading-tight">{stage.name}</span>
+                    <span className="mt-0.5 text-[12.5px] font-medium text-white/60">
+                      {stage.subtitle}
+                    </span>
+
+                    <span className="mt-3.5 flex items-center gap-3">
+                      <span className="flex flex-1 gap-1">
+                        {stage.spots.map((s, i) => (
+                          <span
+                            key={s.id}
+                            className={[
+                              'h-[3px] flex-1',
+                              i < count ? 'bg-seal' : 'bg-white/25',
+                            ].join(' ')}
+                          />
+                        ))}
+                      </span>
+                      <span className="text-[12.5px] font-bold text-white/80 tabular-nums">
+                        {count}/{total}
+                      </span>
+                    </span>
+                  </span>
+
+                  {!on && (
+                    <span className="absolute right-4 top-4 text-white/70">
+                      <Icon name="chevron" size={17} />
+                    </span>
+                  )}
                 </button>
               </li>
             )
           })}
         </ul>
 
-        <p className="mt-6 px-1 text-[12px] font-medium leading-relaxed text-ink-3">
+        <p className="mt-6 text-[11.5px] font-medium leading-relaxed text-ink-3">
           {current.credit}
         </p>
       </div>
